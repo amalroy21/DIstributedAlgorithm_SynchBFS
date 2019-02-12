@@ -4,6 +4,13 @@
 # Log file
 *.log
 
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+
 # BlueJ files
 *.ctxt
 
