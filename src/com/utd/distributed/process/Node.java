@@ -3,7 +3,7 @@ package com.utd.distributed.process;
 import com.utd.distributed.master.Master;
 import com.utd.distributed.util.Message;
 
-public class Process implements Runnable{
+public class Node implements Runnable{
 
 	private Master master;
     private int id;
@@ -16,10 +16,11 @@ public class Process implements Runnable{
     private int round = 0;
 	private boolean processDone = false;
     
-	public Process(int id, int root,int[] edgeInfo) {
+	public Node(int id, int root,int[] edgeInfo,Master master) {
 		this.id = id;
 		this.root = root;
-		this.edgeInfo=edgeInfo;
+		this.edgeInfo = edgeInfo;
+		this.master = master;
 	}
     
 	public void setProcessNeighbors(Process p[]) {
