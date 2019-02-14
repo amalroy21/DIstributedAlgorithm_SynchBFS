@@ -1,44 +1,45 @@
 package com.utd.distributed.master;
 
 import java.util.HashMap;
-import com.utd.distributed.process.Node;
+import com.utd.distributed.process.Process;
 
 public class Master implements Runnable{
 
-   private int nodeCount;
-   private Node[] p;
+   private int ProcessCount;
+   private Process[] p;
+   private volatile HashMap<Integer,Integer> parents = new HashMap<>();
    private volatile HashMap<Integer,Boolean> roundDetails = new HashMap<>();
    private boolean masterDone = false;
-   private boolean treeDone = false;
+   public static boolean treeDone = false;
    
-   public Master(int nodeCount){
-		this.nodeCount = nodeCount;
-		for(int i = 0; i < nodeCount; i++){
+   public Master(int ProcessCount){
+		this.ProcessCount = ProcessCount;
+		for(int i = 0; i < ProcessCount; i++){
 			roundDetails.put(i, false);
 		}
 	}
    
    // Passing the Reference of the Process
-   public void setProcesses(Node[] p){
+   public void setProcesses(Process[] p){
 		this.p = p;
-		for(int i = 0; i < nodeCount; i++){
+		/*for(int i = 0; i < ProcessCount; i++){
 			//p[i].setProcessNeighbors(p);
-		}
+		}*/
    }
    
    @Override
    public void run() {
-		// TODO Auto-generated method stub
-		System.out.println("Master started");
+
+	   System.out.println("Master has started");
 		
 		while (!roundDone()) {
-			//System.out.println("round done1");
+			System.out.println("Starting round");
 			// Waiting till all the Processes have started
 		}
 		resetRoundDetails();
 		initiateProcesses();
 		while (!roundDone()) {
-			//System.out.println("round done 2");
+			System.out.println("Initiating Round");
 			//Initiating the messages from all the Processes
 		}
 		resetRoundDetails();
@@ -66,11 +67,16 @@ public class Master implements Runnable{
 		}
 	}
    
-   
+   // Assigning parents for each Process
+	public synchronized void assignParents(int id, int parent) {
+		// TODO Auto-generated method stub
+		//Parent p = new Parent(parent,weight);
+		parents.put(id, parent);
+	}
 	
 	// Sending Terminate message to all the Processes
 	public void stopMasterProcess(){
-		for(int i = 0; i < nodeCount; i++){
+		for(int i = 0; i < ProcessCount; i++){
 			p[i].setMessageFromMaster("MasterDone");
 		}
 	}
@@ -82,8 +88,8 @@ public class Master implements Runnable{
 	
 	// Constructing and printing the Shortest Paths Tree
 	public void printTree(){
-		System.out.println("Asynch BFS Algorithm Executed !!");
-		int result[][] = new int[nodeCount][nodeCount];
+		System.out.println("Spanning Tree !!");
+		int result[][] = new int[ProcessCount][ProcessCount];
 		for(int i = 0; i < result.length; i++){
 			for(int j = 0; j < result[0].length;j++){
 				result[i][j] = -1;
@@ -101,9 +107,9 @@ public class Master implements Runnable{
 		
 		System.out.println("Following is the resultant BFS Tree as a Adjacency List: ");
 		System.out.println("Process"+"\t"+"Neighbours");
-		for (int i = 0; i < nodeCount; i++) {
+		for (int i = 0; i < ProcessCount; i++) {
 			System.out.print(i+"\t");
-			for (int j = 0; j < nodeCount; j++) {
+			for (int j = 0; j < ProcessCount; j++) {
 				if(result[i][j] != - 1){
 				System.out.print(j+"\t");//+" : "+result[i][j] + "\t");
 				}
@@ -117,28 +123,28 @@ public class Master implements Runnable{
 	// Request for parent Process for each Process for building the Shortest
 			// path tree
 	private void getParents() {
-		for (int i = 0; i < nodeCount; i++) {
+		for (int i = 0; i < ProcessCount; i++) {
 			p[i].setMessageFromMaster("SendParent");
 		}
 	}
 	
 	// To start next round
 	private void startRound() {
-		for (int i = 0; i < nodeCount; i++) {
+		for (int i = 0; i < ProcessCount; i++) {
 			p[i].setMessageFromMaster("StartRound");
 		}
 	}
 	
 	// To start next round
 	private void initiateProcesses() {
-		for (int i = 0; i < nodeCount; i++) {
+		for (int i = 0; i < ProcessCount; i++) {
 			p[i].setMessageFromMaster("Initiate");
 		}
 	}
 	
 	// Reset the Round confirmation after each round
 	private void resetRoundDetails(){
-		for(int i = 0; i < nodeCount; i++){
+		for(int i = 0; i < ProcessCount; i++){
 			roundDetails.put(i, false);
 		}
 	}
