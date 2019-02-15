@@ -78,60 +78,53 @@ public class Process implements Runnable{
 		}
 	}
 	
-	/* To get the recent signal send by the master process. 
-	 * Inorder to execute the distributed systems synchronously
-	 * */
 	public String getMessageFromMaster(){
 		return messageFromMaster;
 	}
 	
-	/*
-	 * To set the signal by the master process to processes. 
-	 * Inorder to execute the distributed systems synchronously
-	 * */
+	
 	public void setMessageFromMaster(String messageFromMaster) {
 		this.messageFromMaster = messageFromMaster;
 		System.out.print("Entered setMessageFromMaster and msg of "+this.id +" is "+this.messageFromMaster+" ");
 	}
 	
-	// Sending current distance to all neighbors
-		private void sendMessages(){
-			Message message = new Message();
-			message.setFromId(this.id);
-			for (int n : neighbors) {
-				System.out.println(n);
-				message.setSentRound(round);
-				p[n].modifyQueue(message, this.id, "insert");
+	private void sendMessages(){
+		Message message = new Message();
+		message.setFromId(this.id);
+		for (int n : neighbors) {
+			System.out.println(n);
+			message.setSentRound(round);
+			p[n].modifyQueue(message, this.id, "insert");
 
-			}
 		}
+	}
 		
-		// Processing messages in the Queue 
-		private boolean receiveMessages(){
-			
-			Message msg = modifyQueue(null, -1, "poll");
-			while(msg != null) {
-				if(this.marked == false) {
-					System.out.println("message not null for ID" + id);
-					this.parent = msg.getFromId();
-					System.out.println("Parent of "+ id + " is :" + parent);
-					p[id].acknowledgeStatus(id, "Unknown", true);
-					this.marked = true;
-				}else {
-					p[msg.getFromId()].acknowledgeStatus(id, "Reject", false);
-				}
+	// Processing messages in the Queue 
+	private boolean receiveMessages(){
+		
+		Message msg = modifyQueue(null, -1, "poll");
+		while(msg != null) {
+			if(this.marked == false) {
+				System.out.println("message not null for ID" + id);
+				this.parent = msg.getFromId();
+				System.out.println("Parent of "+ id + " is :" + parent);
+				p[id].acknowledgeStatus(id, "Unknown", true);
+				this.marked = true;
+			}else {
+				p[msg.getFromId()].acknowledgeStatus(id, "Reject", false);
 			}
-			if (acknowledge(id)) {
-				System.out.print("Acknowledged process is "+id+" parent is "+parent);
-				if(parent == id){
-					Master.treeDone = true;
-				}
-				else {
-					p[parent].acknowledgeStatus(id, "Done", false);
-				}
-			}
-			return marked;
 		}
+		if (acknowledge(id)) {
+			System.out.print("Acknowledged process is "+id+" parent is "+parent);
+			if(parent == id){
+				Master.treeDone = true;
+			}
+			else {
+				p[parent].acknowledgeStatus(id, "Done", false);
+			}
+		}
+		return marked;
+	}
 
 		
 		/*
