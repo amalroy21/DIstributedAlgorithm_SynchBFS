@@ -22,9 +22,9 @@ public class Master implements Runnable{
    // Passing the Reference of the Process
    public void setProcesses(Process[] p){
 		this.p = p;
-		/*for(int i = 0; i < ProcessCount; i++){
-			//p[i].setProcessNeighbors(p);
-		}*/
+		for(int i = 0; i < ProcessCount; i++){
+			p[i].setProcessNeighbors(p);
+		}
    }
    
    @Override
@@ -84,6 +84,7 @@ public class Master implements Runnable{
 	// Collecting round completion information from each Process
 	public synchronized void roundCompletionForProcess(int id){
 		roundDetails.put(id, true);
+		System.out.println("Round Done for Process :"+id);
 	}
 	
 	// Constructing and printing the Shortest Paths Tree

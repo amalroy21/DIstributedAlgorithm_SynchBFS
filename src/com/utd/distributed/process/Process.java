@@ -1,8 +1,6 @@
 package com.utd.distributed.process;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -13,18 +11,18 @@ import com.utd.distributed.util.Message;
 public class Process implements Runnable{
 
 	private Master master;
+	private int root;
     private int id;
-    private int root;
     private int[] neighbors;
     private Process[] p;
     private int parent;
-    private int[] children;
     private volatile String messageFromMaster = "";
     private int round = 0;
 	private boolean processDone = false;
 	private HashMap<Integer,String> status = new HashMap<Integer,String>();
-	private volatile HashMap<Integer, Queue<Message>> link = new HashMap<>();
+	
 	private volatile Queue<Message> messageQueue = new LinkedList<>();
+	private volatile boolean marked = false;
     
 	public Process(int id, int root,int[] neighbors,Master master) {
 		this.id = id;
@@ -32,10 +30,8 @@ public class Process implements Runnable{
 		this.neighbors = neighbors;
 		this.master = master;
 		for(Integer a : neighbors){
-			//System.out.print(" "+a);
+			
 			status.put(a, "Unknown");
-			Queue<Message> queue = new LinkedList<>();
-			link.put(a, queue);
 		}
 	}
     
@@ -56,35 +52,28 @@ public class Process implements Runnable{
 				setMessageFromMaster("");
 				master.roundCompletionForProcess(id);	
 			}else if (getMessageFromMaster().equals("StartRound")){
-				/*
-				 * Messages in the Queue are processed based on FIFO and then
-				 * the current distance is sent to all the neighbors
-				 */
+				
 				round++;
 				System.out.println("Process "+id+" entered start round");
 				setMessageFromMaster("");
-				boolean change = receiveMessages();
-				//System.out.println("Change is "+change);
-				if(change){
+				boolean visited = receiveMessages();
+				System.out.println("If process:" + id + "is marked :"+visited);
+				if((id == root && round == 1) || visited) {
 					sendMessages();
 				}
+				
+				p[id].modifyQueue(null, this.id, "reset");
 				master.roundCompletionForProcess(id);
 			}else if(getMessageFromMaster().equals("SendParent")){
-				/* Master process collects parents
-				 */
-				
-				//System.out.println("Process "+id+" entered send parent");
+								
+				System.out.println("Process "+id+" entered send parent");
 				setMessageFromMaster("");
-				int weight;
-				
 				master.assignParents(id,parent);
 				master.roundCompletionForProcess(id);
 			}else if(getMessageFromMaster().equals("MasterDone")){
 				// Terminating the Algorithm
-				//System.out.println("Process: " + id + "; Parent: " + parent + "; Distance from Source: " + distance);
+				System.out.println("Process: " + id + "; Parent: " + parent );
 				processDone = true;
-			}else{
-				//System.out.print("Entered else");
 			}
 		}
 	}
@@ -102,7 +91,7 @@ public class Process implements Runnable{
 	 * */
 	public void setMessageFromMaster(String messageFromMaster) {
 		this.messageFromMaster = messageFromMaster;
-		//System.out.print("Entered setMessageFromMaster and msg of "+this.id +" is "+this.messageFromMaster+" ");
+		System.out.print("Entered setMessageFromMaster and msg of "+this.id +" is "+this.messageFromMaster+" ");
 	}
 	
 	// Sending current distance to all neighbors
@@ -111,49 +100,39 @@ public class Process implements Runnable{
 			message.setFromId(this.id);
 			for (int n : neighbors) {
 				System.out.println(n);
-				//message.setTransmissionTime(random.nextInt(18));
 				message.setSentRound(round);
-				p[n].modifyQueue(message, true, this.id, "insert");
+				p[n].modifyQueue(message, this.id, "insert");
 
 			}
 		}
 		
 		// Processing messages in the Queue 
 		private boolean receiveMessages(){
-			boolean flag = false;
-			for (Integer neighbor : link.keySet()) {
-				//System.out.println(neighbor);
-				Message msg = modifyQueue(null, false, neighbor, "poll");
-				//System.out.println(msg);
-				while(msg != null){
-					System.out.println("message not null");
-						if(newDistance < distance){	// Relaxation
-							flag = true;
-							this.distance = newDistance;
-							if(parent != -1){
-								p[parent].acknowledgeStatus(id,"Reject",false);
-							}
-							this.parent = msg.getFromId();
-							p[id].acknowledgeStatus(id, "Unknown", true);
-						}else{
-							p[msg.getFromId()].acknowledgeStatus(id, "Reject", false);
-						}
-					msg = new Message();
-					msg = modifyQueue(null, false, neighbor, "insert");
-				}
-				if (acknowledge(id)) {
-					//System.out.print("Acknowledged process is "+id+" parent is "+parent);
-					if(parent == id){
-						Master.treeDone = true;
-					}
-					else {
-						p[parent].acknowledgeStatus(id, "Done", false);
-					}
+			
+			Message msg = modifyQueue(null, -1, "poll");
+			while(msg != null) {
+				if(this.marked == false) {
+					System.out.println("message not null for ID" + id);
+					this.parent = msg.getFromId();
+					System.out.println("Parent of "+ id + " is :" + parent);
+					p[id].acknowledgeStatus(id, "Unknown", true);
+					this.marked = true;
+				}else {
+					p[msg.getFromId()].acknowledgeStatus(id, "Reject", false);
 				}
 			}
-			
-			return flag;
+			if (acknowledge(id)) {
+				System.out.print("Acknowledged process is "+id+" parent is "+parent);
+				if(parent == id){
+					Master.treeDone = true;
+				}
+				else {
+					p[parent].acknowledgeStatus(id, "Done", false);
+				}
+			}
+			return marked;
 		}
+
 		
 		/*
 		 * If for a particular process if it's unable to relax other process weights then it sends I'm done to parent.
@@ -161,7 +140,7 @@ public class Process implements Runnable{
 		 * */
 		public synchronized boolean acknowledge(int id){
 			for (Map.Entry<Integer, String> m : status.entrySet()) {
-				if (m.getKey() != parent && m.getValue().equals("Unknown")) {
+				if (m.getKey() != parent && m.getValue().equals("Unmarked")) {
 					return false;
 				}
 			}
@@ -172,20 +151,22 @@ public class Process implements Runnable{
 		/*
 		 * Checks whether a process still need to send explore message or not
 		 * */
-		public synchronized boolean acknowledgeStatus(int nid, String reply, boolean reset){
+		public synchronized boolean acknowledgeStatus(int id, String reply, boolean reset){
 			if(reset){
 				for(Integer val : neighbors){
-					status.put(val,"Unknown");
+					status.put(val,"Unmarked");
 				}
 				return true;
 			}else{
-				status.put(nid, reply);
+				status.put(id, reply);
 			}
 			return true;
 		}
 		
-		
-		public synchronized Message modifyQueue(Message msg, boolean insert, int fromid, String action){
+		/*
+		 * Insert, Poll or reset the message Queue
+		 * */
+		public synchronized Message modifyQueue(Message msg, int fromid, String action){
 			
 			if("insert".equalsIgnoreCase(action)) {
 				messageQueue.add(msg);
@@ -193,6 +174,9 @@ public class Process implements Runnable{
 			else if("poll".equalsIgnoreCase(action)) {
 				if (!messageQueue.isEmpty())
 					return messageQueue.peek();
+			}
+			else if("reset".equalsIgnoreCase(action)) {
+				while(!messageQueue.isEmpty()) ;
 			}
 			return null;
 		}

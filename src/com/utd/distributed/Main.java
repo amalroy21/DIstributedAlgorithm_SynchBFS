@@ -31,7 +31,7 @@ public class Main {
 			Master master = new Master(ProcessCount);
 			String[] edgeList = prop.getProperty("edgeList").split(",");
 			int[][] neighbors = new int[ProcessCount][ProcessCount];
-			int root = Integer.parseInt(prop.getProperty("root"));
+			int root = Integer.parseInt(prop.getProperty("rootNode"));
 			System.out.println("Neighbours->");
 			for(int i = 0; i < ProcessCount; i++){
 				for(int j = 0; j < ProcessCount; j++){
