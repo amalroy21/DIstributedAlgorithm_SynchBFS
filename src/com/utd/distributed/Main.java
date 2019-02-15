@@ -25,8 +25,9 @@ public class Main {
             String filePath = "config.properties";
             Properties prop = ReadPropertyFile.readProperties(filePath);
             
-            
+            System.out.println("-------Distributed Algorithm SynchBFS-------");
             ProcessCount = Integer.parseInt(prop.getProperty("numberofProcess"));
+            System.out.println("No of Process : "+ProcessCount);
             p = new Process[ProcessCount];
 			Master master = new Master(ProcessCount);
 			String[] edgeList = prop.getProperty("edgeList").split(",");
@@ -36,7 +37,7 @@ public class Main {
 			for(int i = 0; i < ProcessCount; i++){
 				for(int j = 0; j < ProcessCount; j++){
 					neighbors[i][j] = Integer.parseInt(edgeList[i].substring(j, j+1));
-					System.out.print(neighbors[i][j]);
+					//System.out.print(neighbors[i][j]);
 				}
 				p[i] = new Process(i,root,neighbors[i],master);
 			}

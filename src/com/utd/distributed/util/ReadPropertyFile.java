@@ -13,7 +13,8 @@ import java.util.Properties;
 
 public class ReadPropertyFile {
 
-    public static Properties readProperties(String filePath)   {
+    @SuppressWarnings("finally")
+	public static Properties readProperties(String filePath)   {
 
         Properties prop = new Properties();
         InputStream input = null;
@@ -36,19 +37,5 @@ public class ReadPropertyFile {
             }
             return prop;
         }
-    }
-
-    public static void main(String[] args)  {
-
-        Properties prop = readProperties("config.properties");
-        System.out.println("serverPort: " + prop.getProperty("serverPort"));
-        System.out.println("clientPort: " + prop.getProperty("clientPort"));
-
-        for(int i = 1; i <= Integer.valueOf(prop.getProperty("noofserver")); i++)
-            System.out.println("serverPort: " + prop.getProperty("server"+i));
-
-        for(int i = 1; i <= Integer.valueOf(prop.getProperty("noofclient")); i++)
-            System.out.println("serverPort: " + prop.getProperty("client"+i));
-
     }
 }
