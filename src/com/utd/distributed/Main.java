@@ -28,16 +28,16 @@ public class Main {
             System.out.println("-------Distributed Algorithm SynchBFS-------");
             ProcessCount = Integer.parseInt(prop.getProperty("numberofProcess"));
             System.out.println("No of Process : "+ProcessCount);
+            int root = Integer.parseInt(prop.getProperty("rootNode"));
+            System.out.println("Process "+ root + " is the root process");
             p = new Process[ProcessCount];
-			Master master = new Master(ProcessCount);
+			Master master = new Master(ProcessCount,root);
 			String[] edgeList = prop.getProperty("edgeList").split(",");
 			int[][] neighbors = new int[ProcessCount][ProcessCount];
-			int root = Integer.parseInt(prop.getProperty("rootNode"));
-			System.out.println("Neighbours->");
+			
 			for(int i = 0; i < ProcessCount; i++){
 				for(int j = 0; j < ProcessCount; j++){
 					neighbors[i][j] = Integer.parseInt(edgeList[i].substring(j, j+1));
-					//System.out.print(neighbors[i][j]);
 				}
 				p[i] = new Process(i,root,neighbors[i],master);
 			}

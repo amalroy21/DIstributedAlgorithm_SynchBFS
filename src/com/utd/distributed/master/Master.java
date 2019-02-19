@@ -11,12 +11,14 @@ public class Master implements Runnable{
    private volatile HashMap<Integer,Boolean> roundDetails = new HashMap<>();
    private boolean masterDone = false;
    public static boolean treeDone = false;
+   public int root;
    
-   public Master(int ProcessCount){
+   public Master(int ProcessCount, int root){
 		this.ProcessCount = ProcessCount;
 		for(int i = 0; i < ProcessCount; i++){
 			roundDetails.put(i, false);
 		}
+		this.root = root;
 	}
    
    // Passing the Reference of the Process
@@ -33,20 +35,17 @@ public class Master implements Runnable{
 	   System.out.println("Master Process has started");
 		
 		while (!roundDone()) {
-			//System.out.println("Starting round");
 			// Waiting till all the Processes have started
 		}
 		resetRoundDetails();
 		initiateProcesses();
 		while (!roundDone()) {
-			//System.out.println("Initiating Round");
 			//Initiating the messages from all the Processes
 		}
 		resetRoundDetails();
 		startRound();
 		while(!masterDone){
 			while (!roundDone()) {
-				//System.out.println("round done 3");
 				// Waiting till all the Processes complete one round
 			}
 			while(!treeDone){
@@ -70,7 +69,6 @@ public class Master implements Runnable{
    // Assigning parents for each Process
 	public synchronized void assignParents(int id, int parent) {
 		// TODO Auto-generated method stub
-		//Parent p = new Parent(parent,weight);
 		parents.put(id, parent);
 	}
 	
@@ -84,22 +82,29 @@ public class Master implements Runnable{
 	// Collecting round completion information from each Process
 	public synchronized void roundCompletionForProcess(int id){
 		roundDetails.put(id, true);
-		//System.out.println("Round Done for Process :"+id);
 	}
 	
-	// Constructing and printing the Shortest Paths Tree
+	// Constructing and printing the Minimum Spanning Tree
 	public void printTree(){
-		//System.out.println("Spanning Tree !!");
 		int result[][] = new int[ProcessCount][ProcessCount];
 		for(int i = 0; i < result.length; i++){
 			for(int j = 0; j < result[0].length;j++){
 				result[i][j] = -1;
 			}
 		}
-		System.out.println("Synch BFS Algorithm is Executed !!");
 		
-		System.out.println("Following is the resultant BFS Tree as a Adjacency List: ");
-		System.out.println("Process"+"\t"+"Neighbours");
+		for(Integer id : parents.keySet()){
+			if(id == parents.get(id)){
+				result[id][parents.get(id)] = -1;
+				result[parents.get(id)][id] = -1;
+			}else{
+			result[id][parents.get(id)] = parents.get(id);
+			result[parents.get(id)][id] = parents.get(id);
+			}
+		}
+		System.out.println("Synch BFS Algorithm is Executed !!");
+		System.out.println("Following is the resultant Minimum Spanning Tree as a Adjacency List: ");
+		System.out.println("Process"+"\t"+"Neighbours:");
 		for (int i = 0; i < ProcessCount; i++) {
 			System.out.print(i+"\t");
 			for (int j = 0; j < ProcessCount; j++) {
@@ -114,7 +119,7 @@ public class Master implements Runnable{
 	
 	
 	// Request for parent Process for each Process for building the Shortest
-			// path tree
+	// path tree
 	private void getParents() {
 		for (int i = 0; i < ProcessCount; i++) {
 			p[i].setMessageFromMaster("SendParent");
@@ -144,13 +149,11 @@ public class Master implements Runnable{
 	
 	// To check the completion of the Round
 	private boolean roundDone(){
-		//System.out.println("round done entered");
 		for(boolean b : roundDetails.values()){
 			if(!b){
 				return false;
 			}
 		}
-		
 		return true;
 	}
 }
